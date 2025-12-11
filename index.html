@@ -1,0 +1,1712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Village Adventure</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            background: #87CEEB;
+        }
+        
+        #gameCanvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        #dialogueBox {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            max-width: 90%;
+            background: rgba(40, 30, 20, 0.95);
+            border: 3px solid rgba(255, 215, 0, 0.6);
+            border-radius: 12px;
+            padding: 20px;
+            color: #FFF;
+            display: none;
+            pointer-events: auto;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.6);
+        }
+        
+        #dialogueBox.visible {
+            display: block;
+        }
+        
+        #npcName {
+            font-size: 20px;
+            font-weight: bold;
+            color: #FFD700;
+            margin-bottom: 10px;
+        }
+        
+        #dialogueText {
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 15px;
+            min-height: 60px;
+        }
+        
+        #choices {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .choice-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+        }
+        
+        .choice-btn:hover {
+            background: #45a049;
+            transform: translateX(5px);
+        }
+        
+        #controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            pointer-events: none;
+            border: 2px solid rgba(255, 215, 0, 0.7);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        
+        #timerDisplay {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: #FFD700;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-size: 24px;
+            font-weight: bold;
+            pointer-events: none;
+            display: none;
+            border: 2px solid rgba(255, 215, 0, 0.7);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        
+        #timerDisplay.visible {
+            display: block;
+        }
+        
+        #timerDisplay.warning {
+            color: #FF4444;
+            border-color: rgba(255, 68, 68, 0.8);
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.1); }
+        }
+        
+        #interactPrompt {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: #FFD700;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            display: none;
+            pointer-events: none;
+            border: 2px solid rgba(255, 215, 0, 0.7);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        
+        #interactPrompt.visible {
+            display: block;
+        }
+        
+        #endingScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            pointer-events: auto;
+        }
+        
+        #endingScreen.visible {
+            display: flex;
+        }
+        
+        #endingTitle {
+            font-size: 48px;
+            color: #FFD700;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        #endingText {
+            font-size: 24px;
+            color: white;
+            text-align: center;
+            max-width: 600px;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+        
+        #restartBtn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-right: 15px;
+        }
+        
+        #restartBtn:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+        
+        #nextLevelBtn {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        #nextLevelBtn:hover {
+            background: #0b7dda;
+            transform: scale(1.05);
+        }
+        
+        #startMenu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            pointer-events: auto;
+            z-index: 1000;
+        }
+        
+        #startMenu.hidden {
+            display: none;
+        }
+        
+        #startMenu h1 {
+            font-size: 64px;
+            color: #FFD700;
+            margin-bottom: 10px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.7);
+        }
+        
+        #startMenu p {
+            font-size: 24px;
+            color: #FFFFFF;
+            font-style: italic;
+            margin-bottom: 40px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+            opacity: 0.9;
+        }
+        
+        #startBtn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 20px 60px;
+            font-size: 28px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 20px;
+        }
+        
+        #startBtn:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+        
+        #howToPlayBtn {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 15px;
+        }
+        
+        #howToPlayBtn:hover {
+            background: #0b7dda;
+            transform: scale(1.05);
+        }
+        
+        #settingsBtn {
+            background: #666;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        #howToPlayMenu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: none;
+            justify-content: flex-start;
+            align-items: center;
+            flex-direction: column;
+            pointer-events: auto;
+            z-index: 1001;
+            overflow-y: auto;
+            padding: 60px 20px 40px 20px;
+        }
+        
+        #howToPlayMenu.visible {
+            display: flex;
+        }
+        
+        #howToPlayMenu h2 {
+            font-size: 48px;
+            color: #FFD700;
+            margin-bottom: 30px;
+        }
+        
+        .how-to-section {
+            background: rgba(255,255,255,0.1);
+            padding: 20px 30px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            max-width: 700px;
+            border: 2px solid rgba(255, 215, 0, 0.3);
+        }
+        
+        .how-to-section h3 {
+            color: #FFD700;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .how-to-section p {
+            color: white;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+        
+        #howToPlayBackBtn {
+            background: #666;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 20px;
+        }
+        
+        #howToPlayBackBtn:hover {
+            background: #555;
+            transform: scale(1.05);
+        }
+        
+        #settingsMenu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            pointer-events: auto;
+            z-index: 1001;
+        }
+        
+        #settingsMenu.visible {
+            display: flex;
+        }
+        
+        #settingsMenu h2 {
+            font-size: 48px;
+            color: #FFD700;
+            margin-bottom: 40px;
+        }
+        
+        .setting-option {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255,255,255,0.1);
+            padding: 20px 30px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            min-width: 400px;
+        }
+        
+        .setting-label {
+            font-size: 24px;
+            color: white;
+        }
+        
+        .toggle-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 30px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 100px;
+        }
+        
+        .toggle-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .toggle-btn.off {
+            background: #f44336;
+        }
+        
+        .timer-difficulty-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .timer-diff-btn {
+            background: #666;
+            color: white;
+            border: 2px solid transparent;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .timer-diff-btn:hover {
+            background: #555;
+            transform: scale(1.05);
+        }
+        
+        .timer-diff-btn.active {
+            background: #4CAF50;
+            border-color: #FFD700;
+        }
+        
+        #backBtn {
+            background: #666;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 40px;
+        }
+        
+        #backBtn:hover {
+            background: #555;
+            transform: scale(1.05);
+        }
+        
+        #pauseBtn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            border: 2px solid rgba(255, 215, 0, 0.7);
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            pointer-events: auto;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        
+        #pauseBtn:hover {
+            background: rgba(0,0,0,0.9);
+            border-color: #FFD700;
+            transform: scale(1.05);
+        }
+        
+        #pauseMenu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            pointer-events: auto;
+            z-index: 1002;
+        }
+        
+        #pauseMenu.visible {
+            display: flex;
+        }
+        
+        #pauseMenu h2 {
+            font-size: 48px;
+            color: #FFD700;
+            margin-bottom: 40px;
+        }
+        
+        .pause-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            pointer-events: auto;
+        }
+        
+        #resumeBtn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            pointer-events: auto;
+        }
+        
+        #resumeBtn:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+        
+        #pauseSettingsBtn {
+            background: #666;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            pointer-events: auto;
+        }
+        
+        #pauseSettingsBtn:hover {
+            background: #555;
+            transform: scale(1.05);
+        }
+        
+        #restartGameBtn {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            pointer-events: auto;
+        }
+        
+        #restartGameBtn:hover {
+            background: #da190b;
+            transform: scale(1.05);
+        }
+        
+        #mainMenuBtn {
+            background: #666;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        #mainMenuBtn:hover {
+            background: #555;
+            transform: scale(1.05);
+        }
+        
+        #gameCompleteScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            pointer-events: auto;
+            z-index: 1003;
+        }
+        
+        #gameCompleteScreen.visible {
+            display: flex;
+        }
+        
+        #gameCompleteScreen h1 {
+            font-size: 72px;
+            color: #FFD700;
+            margin-bottom: 30px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.7);
+        }
+        
+        #gameCompleteScreen p {
+            font-size: 28px;
+            color: white;
+            margin-bottom: 50px;
+        }
+        
+        #finalRestartBtn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 20px 50px;
+            font-size: 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        #finalRestartBtn:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div id="gameCanvas"></div>
+    <div id="ui">
+        <div id="startMenu">
+            <h1>Village Adventure</h1>
+            <p>Mediate conflicts and bring peace to the village</p>
+            <button id="startBtn">Start Game</button>
+            <button id="howToPlayBtn">How To Play</button>
+            <button id="settingsBtn">Settings</button>
+        </div>
+        
+        <div id="howToPlayMenu">
+            <h2>How To Play</h2>
+            
+            <div class="how-to-section">
+                <h3>🎮 Controls</h3>
+                <p><strong>WASD Keys:</strong> Move your character around the village</p>
+                <p><strong>SPACE Bar:</strong> Talk to villagers when you're near them</p>
+            </div>
+            
+            <div class="how-to-section">
+                <h3>🎯 Objective</h3>
+                <p>Help villagers resolve their conflicts by choosing good or bad advice.</p>
+                <p>Talk to both villagers in each level and make your choices carefully!</p>
+                <p>Your choices will determine the ending - Good, Bad, or Mixed.</p>
+            </div>
+            
+            <div class="how-to-section">
+                <h3>⏸️ Pause Menu</h3>
+                <p><strong>Resume:</strong> Continue playing from where you paused</p>
+                <p><strong>Settings:</strong> Adjust sound, brightness, and timer difficulty</p>
+                <p><strong>Restart Game:</strong> Go back to the beginning (clears progress)</p>
+            </div>
+            
+            <div class="how-to-section">
+                <h3>⚙️ Settings</h3>
+                <p><strong>Sound Effects:</strong> Toggle game sounds on/off</p>
+                <p><strong>Brightness:</strong> Choose Dim, Normal, or Bright</p>
+                <p><strong>Timer Challenge:</strong> Add a countdown timer for extra difficulty</p>
+                <p><strong>Timer Difficulty:</strong> Easy (1:15), Medium (0:45), or Hard (0:30)</p>
+            </div>
+            
+            <div class="how-to-section">
+                <h3>📊 Levels</h3>
+                <p>There are 3 levels with different villagers and conflicts.</p>
+                <p>Complete all levels to finish the game!</p>
+            </div>
+            
+            <button id="howToPlayBackBtn">Back</button>
+        </div>
+        
+        <div id="settingsMenu">
+            <h2>Settings</h2>
+            <div class="setting-option">
+                <span class="setting-label">Sound Effects</span>
+                <button id="soundToggle" class="toggle-btn">ON</button>
+            </div>
+            <div class="setting-option">
+                <span class="setting-label">Brightness</span>
+                <button id="brightnessToggle" class="toggle-btn">Normal</button>
+            </div>
+            <div class="setting-option">
+                <span class="setting-label">Timer Challenge</span>
+                <button id="timerToggle" class="toggle-btn">OFF</button>
+            </div>
+            <div class="setting-option" id="timerDifficultyOption" style="display: none;">
+                <span class="setting-label">Timer Difficulty</span>
+                <div class="timer-difficulty-buttons">
+                    <button class="timer-diff-btn" data-difficulty="easy">Easy</button>
+                    <button class="timer-diff-btn active" data-difficulty="medium">Medium</button>
+                    <button class="timer-diff-btn" data-difficulty="hard">Hard</button>
+                </div>
+            </div>
+            <button id="backBtn">Back</button>
+        </div>
+        
+        <button id="pauseBtn" style="display: none;">Pause</button>
+        
+        <div id="pauseMenu">
+            <h2>Paused</h2>
+            <div class="pause-buttons">
+                <button id="resumeBtn">Resume</button>
+                <button id="pauseSettingsBtn">Settings</button>
+                <button id="restartGameBtn">Restart Game</button>
+            </div>
+        </div>
+        
+        <div id="controls">
+            <div><strong>Controls:</strong></div>
+            <div>WASD - Move</div>
+            <div>SPACE - Talk to NPCs</div>
+        </div>
+        
+        <div id="timerDisplay">Time: 0:45</div>
+        
+        <div id="interactPrompt">Press SPACE to talk</div>
+        
+        <div id="dialogueBox">
+            <div id="npcName"></div>
+            <div id="dialogueText"></div>
+            <div id="choices"></div>
+        </div>
+        
+        <div id="endingScreen">
+            <div id="endingTitle"></div>
+            <div id="endingText"></div>
+            <div>
+                <button id="restartBtn">Restart Level</button>
+                <button id="nextLevelBtn">Next Level</button>
+            </div>
+        </div>
+        
+        <div id="gameCompleteScreen">
+            <h1>Game Complete!</h1>
+            <p>Congratulations! You've completed all levels.</p>
+            <button id="finalRestartBtn">Restart from Beginning</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        let gameStarted = false;
+        let gamePaused = false;
+        let player, npc1, npc2;
+        let soundEnabled = true;
+        let brightness = 1.0;
+        let currentLevel = 1;
+        let timerEnabled = false;
+        let timerDifficulty = 'medium'; // 'easy', 'medium', 'hard'
+        let timeRemaining = 45;
+        let timerInterval = null;
+        let lastBeepTime = 0;
+        
+        const timerSettings = {
+            easy: { time: 75, warningTime: 15 },      // 1:15
+            medium: { time: 45, warningTime: 15 },    // 0:45
+            hard: { time: 30, warningTime: 10 }       // 0:30
+        };
+        
+        const gameState = {
+            npc1Completed: false,
+            npc2Completed: false,
+            npc1Choice: null,
+            npc2Choice: null,
+            nearNPC: null,
+            goodChoices: 0,
+            badChoices: 0
+        };
+
+        function loadGame() {
+            const saved = localStorage.getItem('villageGameSave');
+            return saved ? JSON.parse(saved) : null;
+        }
+        
+        function saveGame() {
+            const saveData = {
+                playerX: player.position.x,
+                playerZ: player.position.z,
+                npc1Completed: gameState.npc1Completed,
+                npc2Completed: gameState.npc2Completed,
+                npc1Choice: gameState.npc1Choice,
+                npc2Choice: gameState.npc2Choice,
+                goodChoices: gameState.goodChoices,
+                badChoices: gameState.badChoices,
+                paused: true
+            };
+            localStorage.setItem('villageGameSave', JSON.stringify(saveData));
+        }
+        
+        function loadSettings() {
+            const saved = localStorage.getItem('gameSettings');
+            if (saved) {
+                const settings = JSON.parse(saved);
+                soundEnabled = settings.soundEnabled !== undefined ? settings.soundEnabled : true;
+                brightness = settings.brightness !== undefined ? settings.brightness : 1.0;
+                timerEnabled = settings.timerEnabled !== undefined ? settings.timerEnabled : false;
+                timerDifficulty = settings.timerDifficulty !== undefined ? settings.timerDifficulty : 'medium';
+                updateSoundButton();
+                updateBrightnessButton();
+                updateTimerButton();
+                updateTimerDifficultyButtons();
+                applyBrightness();
+            }
+        }
+        
+        function saveSettings() {
+            const settings = {
+                soundEnabled: soundEnabled,
+                brightness: brightness,
+                timerEnabled: timerEnabled,
+                timerDifficulty: timerDifficulty
+            };
+            localStorage.setItem('gameSettings', JSON.stringify(settings));
+        }
+        
+        function updateSoundButton() {
+            const btn = document.getElementById('soundToggle');
+            if (soundEnabled) {
+                btn.textContent = 'ON';
+                btn.classList.remove('off');
+            } else {
+                btn.textContent = 'OFF';
+                btn.classList.add('off');
+            }
+        }
+        
+        function updateBrightnessButton() {
+            const btn = document.getElementById('brightnessToggle');
+            if (brightness === 0.5) {
+                btn.textContent = 'Dim';
+            } else if (brightness === 1.0) {
+                btn.textContent = 'Normal';
+            } else if (brightness === 1.8) {
+                btn.textContent = 'Bright';
+            }
+        }
+        
+        function updateTimerButton() {
+            const btn = document.getElementById('timerToggle');
+            const diffOption = document.getElementById('timerDifficultyOption');
+            if (timerEnabled) {
+                btn.textContent = 'ON';
+                btn.classList.remove('off');
+                diffOption.style.display = 'flex';
+            } else {
+                btn.textContent = 'OFF';
+                btn.classList.add('off');
+                diffOption.style.display = 'none';
+            }
+        }
+        
+        function updateTimerDifficultyButtons() {
+            document.querySelectorAll('.timer-diff-btn').forEach(btn => {
+                if (btn.dataset.difficulty === timerDifficulty) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+        
+        function applyBrightness() {
+            renderer.toneMappingExposure = brightness;
+        }
+        
+        function startTimer() {
+            // Clear any existing timer first
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            
+            if (!timerEnabled) {
+                // Hide timer if disabled
+                document.getElementById('timerDisplay').classList.remove('visible');
+                return;
+            }
+            
+            const settings = timerSettings[timerDifficulty];
+            timeRemaining = settings.time;
+            lastBeepTime = 0;
+            updateTimerDisplay();
+            const timerDisplay = document.getElementById('timerDisplay');
+            timerDisplay.classList.add('visible');
+            timerDisplay.classList.remove('warning');
+            
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                updateTimerDisplay();
+                
+                if (timeRemaining <= settings.warningTime) {
+                    document.getElementById('timerDisplay').classList.add('warning');
+                    // Play beep when in warning time
+                    playSound('timer_warning');
+                }
+                
+                if (timeRemaining <= 0) {
+                    stopTimer();
+                    playSound('times_up');
+                    showTimeoutEnding();
+                }
+            }, 1000);
+        }
+        
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            document.getElementById('timerDisplay').classList.remove('visible');
+            document.getElementById('timerDisplay').classList.remove('warning');
+        }
+        
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeRemaining / 60);
+            const seconds = timeRemaining % 60;
+            const display = `Time: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('timerDisplay').textContent = display;
+        }
+        
+        function showTimeoutEnding() {
+            const endingScreen = document.getElementById('endingScreen');
+            const endingTitle = document.getElementById('endingTitle');
+            const endingText = document.getElementById('endingText');
+            const nextLevelBtn = document.getElementById('nextLevelBtn');
+            const restartBtn = document.getElementById('restartBtn');
+            
+            endingTitle.textContent = "Time's Up!";
+            endingText.textContent = "You ran out of time! The villagers had to resolve their conflicts without your help.";
+            
+            nextLevelBtn.style.display = 'none';
+            restartBtn.textContent = 'Restart Game';
+            
+            endingScreen.classList.add('visible');
+        }
+        
+        function playSound(type) {
+            if (!soundEnabled) return;
+            
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            if (type === 'walk') {
+                oscillator.frequency.value = 200;
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.05);
+            } else if (type === 'interact') {
+                oscillator.frequency.value = 400;
+                gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.2);
+            } else if (type === 'timer_warning') {
+                // Beep sound for timer warning
+                oscillator.frequency.value = 800;
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.1);
+            } else if (type === 'times_up') {
+                // Descending alarm sound for losing
+                oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.5);
+                gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.5);
+            } else if (type === 'level_complete') {
+                // Success jingle - ascending notes
+                const notes = [523.25, 659.25, 783.99]; // C, E, G
+                notes.forEach((freq, index) => {
+                    const osc = audioContext.createOscillator();
+                    const gain = audioContext.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioContext.destination);
+                    
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.2, audioContext.currentTime + index * 0.15);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + index * 0.15 + 0.3);
+                    osc.start(audioContext.currentTime + index * 0.15);
+                    osc.stop(audioContext.currentTime + index * 0.15 + 0.3);
+                });
+            }
+        }
+        
+        window.addEventListener('load', () => {
+            loadSettings();
+        });
+        
+        document.getElementById('startBtn').onclick = () => {
+            // Always start fresh - clear any saved game
+            localStorage.removeItem('villageGameSave');
+            
+            // Reset game state
+            gameState.npc1Completed = false;
+            gameState.npc2Completed = false;
+            gameState.npc1Choice = null;
+            gameState.npc2Choice = null;
+            gameState.goodChoices = 0;
+            gameState.badChoices = 0;
+            
+            // Reset player position
+            player.position.x = 0;
+            player.position.z = 5;
+            
+            document.getElementById('startMenu').classList.add('hidden');
+            document.getElementById('pauseBtn').style.display = 'block';
+            gameStarted = true;
+            
+            // Start timer if enabled
+            startTimer();
+        };
+        
+        document.getElementById('settingsBtn').onclick = () => {
+            document.getElementById('settingsMenu').classList.add('visible');
+        };
+        
+        document.getElementById('howToPlayBtn').onclick = () => {
+            document.getElementById('howToPlayMenu').classList.add('visible');
+        };
+        
+        document.getElementById('howToPlayBackBtn').onclick = () => {
+            document.getElementById('howToPlayMenu').classList.remove('visible');
+        };
+        
+        document.getElementById('backBtn').onclick = () => {
+            document.getElementById('settingsMenu').classList.remove('visible');
+            // If we came from pause menu, go back to it
+            if (gamePaused) {
+                document.getElementById('pauseMenu').classList.add('visible');
+            }
+        };
+        
+        document.getElementById('soundToggle').onclick = () => {
+            soundEnabled = !soundEnabled;
+            updateSoundButton();
+            saveSettings();
+            playSound('interact');
+        };
+        
+        document.getElementById('brightnessToggle').onclick = () => {
+            // Cycle through: Normal -> Bright -> Dim -> Normal
+            if (brightness === 1.0) {
+                brightness = 1.8; // Bright
+            } else if (brightness === 1.8) {
+                brightness = 0.5; // Dim
+            } else {
+                brightness = 1.0; // Normal
+            }
+            updateBrightnessButton();
+            applyBrightness();
+            saveSettings();
+            playSound('interact');
+        };
+        
+        document.getElementById('timerToggle').onclick = () => {
+            const wasEnabled = timerEnabled;
+            timerEnabled = !timerEnabled;
+            updateTimerButton();
+            saveSettings();
+            playSound('interact');
+            
+            // Always stop timer when toggling
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            
+            // Update display immediately
+            if (timerEnabled) {
+                const settings = timerSettings[timerDifficulty];
+                timeRemaining = settings.time;
+                updateTimerDisplay();
+                document.getElementById('timerDisplay').classList.add('visible');
+                document.getElementById('timerDisplay').classList.remove('warning');
+                
+                // Only start interval if game is active
+                if (gameStarted && !gamePaused) {
+                    timerInterval = setInterval(() => {
+                        timeRemaining--;
+                        updateTimerDisplay();
+                        
+                        if (timeRemaining <= settings.warningTime) {
+                            document.getElementById('timerDisplay').classList.add('warning');
+                            playSound('timer_warning');
+                        }
+                        
+                        if (timeRemaining <= 0) {
+                            stopTimer();
+                            playSound('times_up');
+                            showTimeoutEnding();
+                        }
+                    }, 1000);
+                }
+            } else {
+                document.getElementById('timerDisplay').classList.remove('visible');
+                document.getElementById('timerDisplay').classList.remove('warning');
+            }
+        };
+        
+        // Timer difficulty buttons - set up event listeners
+        function setupTimerDifficultyButtons() {
+            document.querySelectorAll('.timer-diff-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    timerDifficulty = btn.dataset.difficulty;
+                    updateTimerDifficultyButtons();
+                    saveSettings();
+                    playSound('interact');
+                    
+                    // If timer is currently running, restart with new difficulty
+                    if (timerEnabled && gameStarted && !gamePaused) {
+                        startTimer();
+                    } else if (timerEnabled) {
+                        // Just update display if not actively playing
+                        const settings = timerSettings[timerDifficulty];
+                        timeRemaining = settings.time;
+                        updateTimerDisplay();
+                    }
+                };
+            });
+        }
+        
+        // Call setup after DOM is ready
+        setupTimerDifficultyButtons();
+        
+        document.getElementById('pauseBtn').onclick = () => {
+            gamePaused = true;
+            saveGame();
+            document.getElementById('pauseMenu').classList.add('visible');
+            // Pause timer
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        };
+        
+        document.getElementById('resumeBtn').onclick = () => {
+            gamePaused = false;
+            document.getElementById('pauseMenu').classList.remove('visible');
+            // Resume timer
+                            if (timerEnabled && timeRemaining > 0) {
+                timerInterval = setInterval(() => {
+                    timeRemaining--;
+                    updateTimerDisplay();
+                    
+                    if (timeRemaining <= 15) {
+                        document.getElementById('timerDisplay').classList.add('warning');
+                    }
+                    
+                    if (timeRemaining <= 0) {
+                        stopTimer();
+                        showTimeoutEnding();
+                    }
+                }, 1000);
+            }
+        };
+        
+        document.getElementById('pauseSettingsBtn').onclick = () => {
+            document.getElementById('pauseMenu').classList.remove('visible');
+            document.getElementById('settingsMenu').classList.add('visible');
+        };
+        
+        document.getElementById('restartGameBtn').onclick = () => {
+            if (confirm('Are you sure you want to restart? All progress will be lost.')) {
+                localStorage.removeItem('villageGameSave');
+                location.reload();
+            }
+        };
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB);
+        scene.fog = new THREE.Fog(0x87CEEB, 50, 80);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 15, 15);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0;
+        document.getElementById('gameCanvas').appendChild(renderer.domElement);
+
+        // Load settings after renderer is created
+        loadSettings();
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
+        directionalLight.position.set(10, 20, 10);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.camera.left = -25;
+        directionalLight.shadow.camera.right = 25;
+        directionalLight.shadow.camera.top = 25;
+        directionalLight.shadow.camera.bottom = -25;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
+        scene.add(directionalLight);
+
+        const groundGeometry = new THREE.PlaneGeometry(50, 50);
+        const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x228B22 });
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        const pathMaterial = new THREE.MeshLambertMaterial({ color: 0x8B7355 });
+        const mainPath = new THREE.Mesh(new THREE.PlaneGeometry(3, 30), pathMaterial);
+        mainPath.rotation.x = -Math.PI / 2;
+        mainPath.position.y = 0.01;
+        mainPath.receiveShadow = true;
+        scene.add(mainPath);
+
+        const crossPath = new THREE.Mesh(new THREE.PlaneGeometry(25, 3), pathMaterial);
+        crossPath.rotation.x = -Math.PI / 2;
+        crossPath.position.y = 0.01;
+        crossPath.receiveShadow = true;
+        scene.add(crossPath);
+
+        function createHouse(x, z, color) {
+            const house = new THREE.Group();
+            
+            const wallGeometry = new THREE.BoxGeometry(3, 2.5, 3);
+            const wallMaterial = new THREE.MeshLambertMaterial({ color: color });
+            const walls = new THREE.Mesh(wallGeometry, wallMaterial);
+            walls.position.y = 1.25;
+            walls.castShadow = true;
+            walls.receiveShadow = true;
+            house.add(walls);
+            
+            const roofGeometry = new THREE.ConeGeometry(2.5, 1.5, 4);
+            const roofMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+            const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+            roof.position.y = 3.25;
+            roof.rotation.y = Math.PI / 4;
+            roof.castShadow = true;
+            house.add(roof);
+            
+            const doorGeometry = new THREE.BoxGeometry(0.8, 1.5, 0.1);
+            const doorMaterial = new THREE.MeshLambertMaterial({ color: 0x654321 });
+            const door = new THREE.Mesh(doorGeometry, doorMaterial);
+            door.position.set(0, 0.75, 1.51);
+            house.add(door);
+            
+            house.position.set(x, 0, z);
+            return house;
+        }
+
+        const house1 = createHouse(-8, -8, 0xFFE4B5);
+        scene.add(house1);
+        const house2 = createHouse(8, -8, 0xF0E68C);
+        scene.add(house2);
+        const house3 = createHouse(-8, 8, 0xDEB887);
+        scene.add(house3);
+
+        function createTree(x, z) {
+            const tree = new THREE.Group();
+            
+            const trunkGeometry = new THREE.CylinderGeometry(0.3, 0.35, 2, 8);
+            const trunkMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+            const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+            trunk.position.y = 1;
+            trunk.castShadow = true;
+            tree.add(trunk);
+            
+            const leavesGeometry = new THREE.SphereGeometry(1.5, 8, 8);
+            const leavesMaterial = new THREE.MeshLambertMaterial({ color: 0x228B22 });
+            const leaves = new THREE.Mesh(leavesGeometry, leavesMaterial);
+            leaves.position.y = 2.8;
+            leaves.castShadow = true;
+            tree.add(leaves);
+            
+            tree.position.set(x, 0, z);
+            return tree;
+        }
+
+        const trees = [];
+        const treePositions = [
+            [-12, -12], [12, -12], [-12, 12], [12, 12],
+            [-5, -12], [5, -12], [-15, 0], [15, 0]
+        ];
+        treePositions.forEach(pos => {
+            const tree = createTree(pos[0], pos[1]);
+            trees.push(tree);
+            scene.add(tree);
+        });
+
+        const pondGeometry = new THREE.CircleGeometry(3, 32);
+        const pondMaterial = new THREE.MeshLambertMaterial({ color: 0x4169E1 });
+        const pond = new THREE.Mesh(pondGeometry, pondMaterial);
+        pond.rotation.x = -Math.PI / 2;
+        pond.position.set(10, 0.02, 10);
+        pond.receiveShadow = true;
+        scene.add(pond);
+
+        const playerGeometry = new THREE.CylinderGeometry(0.3, 0.3, 1.5, 8);
+        const playerMaterial = new THREE.MeshLambertMaterial({ color: 0xFF6347 });
+        player = new THREE.Mesh(playerGeometry, playerMaterial);
+        player.position.set(0, 0.75, 5);
+        player.castShadow = true;
+        scene.add(player);
+
+        const headGeometry = new THREE.SphereGeometry(0.4, 8, 8);
+        const headMaterial = new THREE.MeshLambertMaterial({ color: 0xFFDBAC });
+        const head = new THREE.Mesh(headGeometry, headMaterial);
+        head.position.y = 1.1;
+        player.add(head);
+
+        function createNPC(x, z, color, name) {
+            const npc = new THREE.Group();
+            
+            const bodyGeometry = new THREE.CylinderGeometry(0.3, 0.3, 1.5, 8);
+            const bodyMaterial = new THREE.MeshLambertMaterial({ color: color });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.position.y = 0.75;
+            body.castShadow = true;
+            npc.add(body);
+            
+            const npcHeadGeometry = new THREE.SphereGeometry(0.4, 8, 8);
+            const npcHeadMaterial = new THREE.MeshLambertMaterial({ color: 0xFFDBAC });
+            const npcHead = new THREE.Mesh(npcHeadGeometry, npcHeadMaterial);
+            npcHead.position.y = 1.5;
+            npcHead.castShadow = true;
+            npc.add(npcHead);
+            
+            npc.position.set(x, 0, z);
+            npc.userData.name = name;
+            return npc;
+        }
+
+        npc1 = createNPC(-6, -3, 0x4169E1, "Elder Tom");
+        scene.add(npc1);
+
+        npc2 = createNPC(6, -3, 0x9370DB, "Merchant Mary");
+        scene.add(npc2);
+        
+        function updateNPCsForLevel() {
+            if (currentLevel === 1) {
+                npc1.userData.name = "Elder Tom";
+                npc1.children[0].material.color.setHex(0x4169E1);
+                npc1.position.set(-6, 0, -3);
+                npc2.userData.name = "Merchant Mary";
+                npc2.children[0].material.color.setHex(0x9370DB);
+                npc2.position.set(6, 0, -3);
+            } else if (currentLevel === 2) {
+                npc1.userData.name = "Cindy";
+                npc1.children[0].material.color.setHex(0xFF69B4);
+                npc1.position.set(6, 0, 10); // Near the pond
+                npc2.userData.name = "Rob";
+                npc2.children[0].material.color.setHex(0xFFA500);
+                npc2.position.set(-6, 0, -10); // Near the bottom left area by a tree
+            } else if (currentLevel === 3) {
+                npc1.userData.name = "Mark";
+                npc1.children[0].material.color.setHex(0xFF4444);
+                npc1.position.set(-10, 0, 8); // Near top left house
+                npc2.userData.name = "Judy";
+                npc2.children[0].material.color.setHex(0x00CED1);
+                npc2.position.set(10, 0, -8); // Near top right house
+            }
+        }
+
+        const colliders = [];
+        [house1, house2, house3].forEach(house => {
+            colliders.push({ x: house.position.x, z: house.position.z, radius: 2.5 });
+        });
+        trees.forEach(tree => {
+            colliders.push({ x: tree.position.x, z: tree.position.z, radius: 1 });
+        });
+        colliders.push({ x: pond.position.x, z: pond.position.z, radius: 3.5 });
+
+        const keys = {};
+        window.addEventListener('keydown', (e) => {
+            if (!gameStarted || gamePaused) return;
+            
+            keys[e.key.toLowerCase()] = true;
+            
+            if (e.key === ' ' && gameState.nearNPC) {
+                e.preventDefault();
+                playSound('interact');
+                showDialogue(gameState.nearNPC);
+            }
+        });
+        window.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+        });
+
+        const dialogues = {
+            npc1: {
+                text: "Traveler! My neighbor keeps letting his chickens into my garden. They're ruining my crops! What should I do?",
+                choices: [
+                    { text: "Talk to him calmly and find a compromise", value: "good", isGood: true },
+                    { text: "Build a fence and ignore him completely", value: "bad", isGood: false }
+                ]
+            },
+            npc2: {
+                text: "Hello there! The village elder won't listen to my ideas for improving the market. I'm so frustrated! What would you do?",
+                choices: [
+                    { text: "Respectfully request a meeting to share your ideas", value: "good", isGood: true },
+                    { text: "Complain loudly to everyone about how unfair it is", value: "bad", isGood: false }
+                ]
+            }
+        };
+
+        const responses = {
+            npc1: {
+                good: "Thank you! I spoke with him and we worked it out. He built a coop and I shared some crops with him. We're friends now!",
+                bad: "I built the fence... but now we don't speak anymore. The village feels more divided."
+            },
+            npc2: {
+                good: "The elder agreed to meet with me! He loved my ideas and we're implementing them together. Thank you for the wise advice!",
+                bad: "Now everyone thinks I'm a troublemaker. The elder won't even look at me anymore. I wish I'd handled it differently."
+            }
+        };
+
+        function showDialogue(npc) {
+            const dialogueBox = document.getElementById('dialogueBox');
+            const npcName = document.getElementById('npcName');
+            const dialogueText = document.getElementById('dialogueText');
+            const choicesDiv = document.getElementById('choices');
+            
+            const npcId = npc === npc1 ? 'npc1' : 'npc2';
+            const completed = npcId === 'npc1' ? gameState.npc1Completed : gameState.npc2Completed;
+            
+            if (completed) return;
+            
+            const dialogue = dialogues[npcId];
+            
+            npcName.textContent = npc.userData.name;
+            dialogueText.textContent = dialogue.text;
+            choicesDiv.innerHTML = '';
+            
+            dialogue.choices.forEach(choice => {
+                const btn = document.createElement('button');
+                btn.className = 'choice-btn';
+                btn.textContent = choice.text;
+                btn.onclick = () => handleChoice(npcId, choice.value, choice.isGood);
+                choicesDiv.appendChild(btn);
+            });
+            
+            dialogueBox.classList.add('visible');
+        }
+
+        function handleChoice(npcId, choiceValue, isGood) {
+            if (npcId === 'npc1') {
+                gameState.npc1Choice = choiceValue;
+                gameState.npc1Completed = true;
+            } else {
+                gameState.npc2Choice = choiceValue;
+                gameState.npc2Completed = true;
+            }
+            
+            if (isGood) {
+                gameState.goodChoices++;
+            } else {
+                gameState.badChoices++;
+            }
+            
+            closeDialogue();
+            
+            setTimeout(() => {
+                const response = responses[npcId][choiceValue];
+                alert(response);
+                
+                if (gameState.npc1Completed && gameState.npc2Completed) {
+                    setTimeout(() => showEnding(), 500);
+                }
+            }, 300);
+        }
+
+        function closeDialogue() {
+            document.getElementById('dialogueBox').classList.remove('visible');
+        }
+
+        function showEnding() {
+            const endingScreen = document.getElementById('endingScreen');
+            const endingTitle = document.getElementById('endingTitle');
+            const endingText = document.getElementById('endingText');
+            const nextLevelBtn = document.getElementById('nextLevelBtn');
+            const restartBtn = document.getElementById('restartBtn');
+            
+            let title, text;
+            
+            if (gameState.goodChoices === 2) {
+                title = "Good Ending";
+                text = "You helped bring peace and harmony to the village. Everyone is happy!";
+            } else if (gameState.badChoices === 2) {
+                title = "Bad Ending";
+                text = "The village is more divided than before. People are unhappy with the outcomes.";
+            } else {
+                title = "Mixed Ending";
+                text = "Some villagers are happy, but others are not. The village is uncertain about the future.";
+            }
+            
+            endingTitle.textContent = title;
+            endingText.textContent = text;
+            
+            // Play success sound
+            playSound('level_complete');
+            
+            // Hide next level button if on last level, change restart button text
+            if (currentLevel >= 3) {
+                nextLevelBtn.style.display = 'none';
+                restartBtn.textContent = 'Restart Game';
+            } else {
+                nextLevelBtn.style.display = 'inline-block';
+                restartBtn.textContent = 'Restart Level';
+            }
+            
+            endingScreen.classList.add('visible');
+        }
+
+        document.getElementById('restartBtn').onclick = () => {
+            const restartBtn = document.getElementById('restartBtn');
+            // If on level 3, this means restart the whole game
+            if (currentLevel === 3) {
+                localStorage.removeItem('villageGameSave');
+                location.reload();
+            } else {
+                resetLevel();
+            }
+        };
+        
+        document.getElementById('nextLevelBtn').onclick = () => {
+            currentLevel++;
+            if (currentLevel > 3) {
+                // Show game complete screen
+                document.getElementById('endingScreen').classList.remove('visible');
+                document.getElementById('gameCompleteScreen').classList.add('visible');
+            } else {
+                resetLevel();
+            }
+        };
+        
+        document.getElementById('finalRestartBtn').onclick = () => {
+            localStorage.removeItem('villageGameSave');
+            location.reload();
+        };
+        
+        function resetLevel() {
+            // Reset game state
+            gameState.npc1Completed = false;
+            gameState.npc2Completed = false;
+            gameState.npc1Choice = null;
+            gameState.npc2Choice = null;
+            gameState.goodChoices = 0;
+            gameState.badChoices = 0;
+            gameState.nearNPC = null;
+            
+            // Reset player position
+            player.position.x = 0;
+            player.position.z = 5;
+            
+            // Update NPCs for current level
+            updateNPCsForLevel();
+            
+            // Hide ending screen
+            document.getElementById('endingScreen').classList.remove('visible');
+            
+            // Restart timer
+            stopTimer();
+            startTimer();
+        }
+
+        function checkNPCProximity() {
+            const distToNPC1 = Math.sqrt(
+                Math.pow(player.position.x - npc1.position.x, 2) +
+                Math.pow(player.position.z - npc1.position.z, 2)
+            );
+            const distToNPC2 = Math.sqrt(
+                Math.pow(player.position.x - npc2.position.x, 2) +
+                Math.pow(player.position.z - npc2.position.z, 2)
+            );
+            
+            const interactDistance = 2;
+            const prompt = document.getElementById('interactPrompt');
+            
+            if (distToNPC1 < interactDistance && !gameState.npc1Completed) {
+                gameState.nearNPC = npc1;
+                prompt.classList.add('visible');
+            } else if (distToNPC2 < interactDistance && !gameState.npc2Completed) {
+                gameState.nearNPC = npc2;
+                prompt.classList.add('visible');
+            } else {
+                gameState.nearNPC = null;
+                prompt.classList.remove('visible');
+            }
+        }
+
+        function checkCollision(newX, newZ) {
+            for (let collider of colliders) {
+                const dist = Math.sqrt(
+                    Math.pow(newX - collider.x, 2) +
+                    Math.pow(newZ - collider.z, 2)
+                );
+                if (dist < collider.radius + 0.5) {
+                    return true;
+                }
+            }
+            
+            if (Math.abs(newX) > 23 || Math.abs(newZ) > 23) {
+                return true;
+            }
+            
+            return false;
+        }
+
+        const moveSpeed = 0.08;
+        let bobOffset = 0;
+        let lastStepSound = 0;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (!gameStarted || gamePaused) {
+                renderer.render(scene, camera);
+                return;
+            }
+            
+            let moving = false;
+            
+            if (keys['w']) {
+                if (!checkCollision(player.position.x, player.position.z - moveSpeed)) {
+                    player.position.z -= moveSpeed;
+                    moving = true;
+                }
+            }
+            if (keys['s']) {
+                if (!checkCollision(player.position.x, player.position.z + moveSpeed)) {
+                    player.position.z += moveSpeed;
+                    moving = true;
+                }
+            }
+            if (keys['a']) {
+                if (!checkCollision(player.position.x - moveSpeed, player.position.z)) {
+                    player.position.x -= moveSpeed;
+                    moving = true;
+                }
+            }
+            if (keys['d']) {
+                if (!checkCollision(player.position.x + moveSpeed, player.position.z)) {
+                    player.position.x += moveSpeed;
+                    moving = true;
+                }
+            }
+            
+            if (moving) {
+                bobOffset += 0.2;
+                player.position.y = 0.75 + Math.sin(bobOffset) * 0.05;
+                
+                if (Date.now() - lastStepSound > 300) {
+                    playSound('walk');
+                    lastStepSound = Date.now();
+                }
+            } else {
+                player.position.y = 0.75;
+            }
+            
+            camera.position.x = player.position.x;
+            camera.position.z = player.position.z + 15;
+            camera.lookAt(player.position.x, 0, player.position.z);
+            
+            checkNPCProximity();
+            
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
