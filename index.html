@@ -104,6 +104,13 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
         
+        @media (max-width: 768px) {
+            #controls {
+                font-size: 12px;
+                padding: 10px 15px;
+            }
+        }
+        
         #timerDisplay {
             position: absolute;
             top: 20px;
@@ -733,8 +740,8 @@
         
         <div id="controls">
             <div><strong>Controls:</strong></div>
-            <div>WASD - Move</div>
-            <div>SPACE - Talk to NPCs</div>
+            <div>WASD / Touch - Move</div>
+            <div>SPACE / Tap NPC - Talk</div>
         </div>
         
         <div id="timerDisplay">Time: 0:45</div>
@@ -1696,6 +1703,7 @@
             camera.lookAt(player.position.x, 0, player.position.z);
             
             checkNPCProximity();
+            checkExplorerAchievement();
             
             renderer.render(scene, camera);
         }
