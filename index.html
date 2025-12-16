@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Village Adventure</title>
     <style>
+
+        /* Prevent mobile text selection & long-press behavior */
+        * {
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -1496,24 +1505,22 @@
             keys[e.key.toLowerCase()] = false;
         });
 
-        // Mobile touch controls (arrow buttons)
-document.querySelectorAll('.arrow-btn').forEach(btn => {
-    const dir = btn.dataset.dir;
+        // Mobile tap controls (tap = short movement burst)
+        document.querySelectorAll('.arrow-btn').forEach(btn => {
+            const dir = btn.dataset.dir;
 
-    btn.addEventListener('touchstart', e => {
-        e.preventDefault();
-        mobileKeys[dir] = true;
-    });
+            btn.addEventListener('touchstart', e => {
+                e.preventDefault();
 
-    btn.addEventListener('touchend', e => {
-        e.preventDefault();
-        mobileKeys[dir] = false;
-    });
+                mobileKeys[dir] = true;
 
-    btn.addEventListener('touchcancel', () => {
-        mobileKeys[dir] = false;
-    });
-});
+                // Stop movement shortly after tap
+                setTimeout(() => {
+                    mobileKeys[dir] = false;
+                }, 120); // feels responsive, not twitchy
+            });
+        });
+
 
 
         const dialogues = {
@@ -1748,7 +1755,15 @@ document.querySelectorAll('.arrow-btn').forEach(btn => {
                 return;
             }
             
+            let keys = {};
             let moving = false;
+
+        let mobileKeys = {
+            up: false,
+            down: false,
+            left: false,
+            right: false
+        };
             
             if (keys['w'] || mobileKeys.up) {
                 if (!checkCollision(player.position.x, player.position.z - moveSpeed)) {
