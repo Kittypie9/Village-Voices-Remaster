@@ -104,13 +104,6 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
         
-        @media (max-width: 768px) {
-            #controls {
-                font-size: 12px;
-                padding: 10px 15px;
-            }
-        }
-        
         #timerDisplay {
             position: absolute;
             top: 20px;
@@ -649,6 +642,38 @@
             background: #45a049;
             transform: scale(1.05);
         }
+
+            #mobileControls {
+        position: absolute;
+        bottom: 30px;
+        left: 30px;
+        display: none;
+        z-index: 999;
+    }
+
+    #mobileControls .row {
+        display: flex;
+        justify-content: center;
+    }
+
+    .arrow-btn {
+        background: rgba(0,0,0,0.7);
+        color: #FFD700;
+        border: 2px solid #FFD700;
+        border-radius: 12px;
+        width: 60px;
+        height: 60px;
+        font-size: 28px;
+        margin: 6px;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .arrow-btn:active {
+        background: rgba(255,215,0,0.8);
+        color: black;
+}
+
     </style>
 </head>
 <body>
@@ -740,13 +765,25 @@
         
         <div id="controls">
             <div><strong>Controls:</strong></div>
-            <div>WASD / Touch - Move</div>
-            <div>SPACE / Tap NPC - Talk</div>
+            <div>WASD - Move</div>
+            <div>SPACE - Talk to NPCs</div>
         </div>
         
         <div id="timerDisplay">Time: 0:45</div>
         
-        <div id="interactPrompt">Press SPACE to talk</div>
+        <div id="interactPrompt">Tap to talk</div>
+
+        <div id="mobileControls">
+            <div class="row">
+                <button class="arrow-btn" data-dir="up">▲</button>
+            </div>
+            <div class="row">
+                <button class="arrow-btn" data-dir="left">◀</button>
+                <button class="arrow-btn" data-dir="down">▼</button>
+                <button class="arrow-btn" data-dir="right">▶</button>
+            </div>
+        </div>
+        
         
         <div id="dialogueBox">
             <div id="npcName"></div>
@@ -783,6 +820,17 @@
         let timeRemaining = 45;
         let timerInterval = null;
         let lastBeepTime = 0;
+
+            // Detect mobile devices
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    // Show mobile controls only after page loads
+    window.addEventListener('load', () => {
+        if (isMobile) {
+            document.getElementById('mobileControls').style.display = 'block';
+        }
+    });
+
         
         const timerSettings = {
             easy: { time: 75, warningTime: 15 },      // 1:15
@@ -1024,7 +1072,13 @@
         
         window.addEventListener('load', () => {
             loadSettings();
+
+            if (isMobile) {
+                document.getElementById('mobileControls').style.display = 'block';
+                document.getElementById('interactPrompt').textContent = 'Tap to talk';
+            }
         });
+
         
         document.getElementById('startBtn').onclick = () => {
             // Always start fresh - clear any saved game
@@ -1210,6 +1264,11 @@
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87CEEB);
         scene.fog = new THREE.Fog(0x87CEEB, 50, 80);
+
+        // Raycaster for clicking/tapping NPCs
+        const raycaster = new THREE.Raycaster();
+        const pointer = new THREE.Vector2();
+
 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(0, 15, 15);
@@ -1417,15 +1476,45 @@
             
             keys[e.key.toLowerCase()] = true;
             
-            if (e.key === ' ' && gameState.nearNPC) {
-                e.preventDefault();
-                playSound('interact');
-                showDialogue(gameState.nearNPC);
-            }
+        if (e.key === ' ' && gameState.nearNPC && !isMobile) {
+            e.preventDefault();
+            playSound('interact');
+            showDialogue(gameState.nearNPC);
+        }
+
         });
+
+        const mobileKeys = {
+            up: false,
+            down: false,
+            left: false,
+            right: false
+        };
+
+
         window.addEventListener('keyup', (e) => {
             keys[e.key.toLowerCase()] = false;
         });
+
+        // Mobile touch controls (arrow buttons)
+document.querySelectorAll('.arrow-btn').forEach(btn => {
+    const dir = btn.dataset.dir;
+
+    btn.addEventListener('touchstart', e => {
+        e.preventDefault();
+        mobileKeys[dir] = true;
+    });
+
+    btn.addEventListener('touchend', e => {
+        e.preventDefault();
+        mobileKeys[dir] = false;
+    });
+
+    btn.addEventListener('touchcancel', () => {
+        mobileKeys[dir] = false;
+    });
+});
+
 
         const dialogues = {
             npc1: {
@@ -1661,25 +1750,25 @@
             
             let moving = false;
             
-            if (keys['w']) {
+            if (keys['w'] || mobileKeys.up) {
                 if (!checkCollision(player.position.x, player.position.z - moveSpeed)) {
                     player.position.z -= moveSpeed;
                     moving = true;
                 }
             }
-            if (keys['s']) {
+            if (keys['s'] || mobileKeys.down) {
                 if (!checkCollision(player.position.x, player.position.z + moveSpeed)) {
                     player.position.z += moveSpeed;
                     moving = true;
                 }
             }
-            if (keys['a']) {
+            if (keys['a'] || mobileKeys.left) {
                 if (!checkCollision(player.position.x - moveSpeed, player.position.z)) {
                     player.position.x -= moveSpeed;
                     moving = true;
                 }
             }
-            if (keys['d']) {
+            if (keys['d'] || mobileKeys.right) {
                 if (!checkCollision(player.position.x + moveSpeed, player.position.z)) {
                     player.position.x += moveSpeed;
                     moving = true;
@@ -1703,7 +1792,6 @@
             camera.lookAt(player.position.x, 0, player.position.z);
             
             checkNPCProximity();
-            checkExplorerAchievement();
             
             renderer.render(scene, camera);
         }
@@ -1713,6 +1801,26 @@
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
+
+        // Click / tap NPCs to talk (mobile + desktop)
+        renderer.domElement.addEventListener('click', (event) => {
+            if (!gameStarted || gamePaused) return;
+
+            const rect = renderer.domElement.getBoundingClientRect();
+            pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+            raycaster.setFromCamera(pointer, camera);
+
+            const intersects = raycaster.intersectObjects([npc1, npc2], true);
+
+            if (intersects.length > 0) {
+                const npc = intersects[0].object.parent;
+                playSound('interact');
+                showDialogue(npc);
+            }
+        });
+
 
         animate();
     </script>
