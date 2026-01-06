@@ -22,7 +22,6 @@
         
         body {
             font-family: 'Arial', sans-serif;
-            overflow: hidden;
             background: #87CEEB;
         }
         
@@ -38,7 +37,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            pointer-events: none;
+            pointer-events: auto;
         }
         
         #dialogueBox {
@@ -147,21 +146,34 @@
         
         #interactPrompt {
             position: absolute;
-            top: 50%;
+            bottom: 150px;
             left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.8);
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.9);
             color: #FFD700;
-            padding: 15px 30px;
+            padding: 18px 40px;
             border-radius: 12px;
-            font-size: 18px;
+            font-size: 20px;
             font-weight: bold;
             display: none;
-            pointer-events: none;
-            border: 2px solid rgba(255, 215, 0, 0.7);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            pointer-events: auto;
+            border: 3px solid #FFD700;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+            cursor: pointer;
+            transition: all 0.2s;
+            z-index: 100;
         }
-        
+
+        #interactPrompt:hover {
+            background: rgba(255, 215, 0, 0.2);
+            transform: translateX(-50%) scale(1.05);
+        }
+
+        #interactPrompt:active {
+            transform: translateX(-50%) scale(0.95);
+            background: rgba(255, 215, 0, 0.3);
+        }
+
         #interactPrompt.visible {
             display: block;
         }
@@ -234,6 +246,7 @@
         }
         
         #startMenu {
+            outline: 3px solid red;
             position: absolute;
             top: 0;
             left: 0;
@@ -701,8 +714,9 @@
             
             <div class="how-to-section">
                 <h3>🎮 Controls</h3>
-                <p><strong>WASD Keys:</strong> Move your character around the village</p>
-                <p><strong>SPACE Bar:</strong> Talk to villagers when you're near them</p>
+                <p><strong>WASD Keys / Arrow Buttons:</strong> Move your character around the village</p>
+                <p><strong>Talk Button / SPACE Bar:</strong> Talk to villagers when you're near them</p>
+                <p><strong>Mobile:</strong> Use the on-screen arrow buttons to move and tap the "Talk" button when near a villager</p>
             </div>
             
             <div class="how-to-section">
@@ -775,12 +789,12 @@
         <div id="controls">
             <div><strong>Controls:</strong></div>
             <div>WASD - Move</div>
-            <div>SPACE - Talk to NPCs</div>
+            <div>SPACE / Talk btn - Interact</div>
         </div>
         
         <div id="timerDisplay">Time: 0:45</div>
         
-        <div id="interactPrompt">Tap to talk</div>
+        <button id="interactPrompt">Talk</button>
 
         <div id="mobileControls">
             <div class="row">
@@ -829,6 +843,17 @@
         let timeRemaining = 45;
         let timerInterval = null;
         let lastBeepTime = 0;
+
+
+        // INPUT STATE (GLOBAL)
+        let keys = {};
+        let mobileKeys = {
+            up: false,
+            down: false,
+            left: false,
+            right: false
+        };
+
 
             // Detect mobile devices
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -1108,6 +1133,7 @@
             document.getElementById('startMenu').classList.add('hidden');
             document.getElementById('pauseBtn').style.display = 'block';
             gameStarted = true;
+            canvas.style.pointerEvents = 'auto';
             
             // Start timer if enabled
             startTimer();
@@ -1285,6 +1311,8 @@
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        const canvas = renderer.domElement;
+        canvas.style.pointerEvents = 'none';
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -1452,392 +1480,6 @@
                 npc1.position.set(-6, 0, -3);
                 npc2.userData.name = "Merchant Mary";
                 npc2.children[0].material.color.setHex(0x9370DB);
-                npc2.position.set(6, 0, -3);
-            } else if (currentLevel === 2) {
-                npc1.userData.name = "Cindy";
-                npc1.children[0].material.color.setHex(0xFF69B4);
-                npc1.position.set(6, 0, 10); // Near the pond
-                npc2.userData.name = "Rob";
-                npc2.children[0].material.color.setHex(0xFFA500);
-                npc2.position.set(-6, 0, -10); // Near the bottom left area by a tree
-            } else if (currentLevel === 3) {
-                npc1.userData.name = "Mark";
-                npc1.children[0].material.color.setHex(0xFF4444);
-                npc1.position.set(-10, 0, 8); // Near top left house
-                npc2.userData.name = "Judy";
-                npc2.children[0].material.color.setHex(0x00CED1);
-                npc2.position.set(10, 0, -8); // Near top right house
-            }
-        }
-
-        const colliders = [];
-        [house1, house2, house3].forEach(house => {
-            colliders.push({ x: house.position.x, z: house.position.z, radius: 2.5 });
-        });
-        trees.forEach(tree => {
-            colliders.push({ x: tree.position.x, z: tree.position.z, radius: 1 });
-        });
-        colliders.push({ x: pond.position.x, z: pond.position.z, radius: 3.5 });
-
-        const keys = {};
-        window.addEventListener('keydown', (e) => {
-            if (!gameStarted || gamePaused) return;
-            
-            keys[e.key.toLowerCase()] = true;
-            
-        if (e.key === ' ' && gameState.nearNPC && !isMobile) {
-            e.preventDefault();
-            playSound('interact');
-            showDialogue(gameState.nearNPC);
-        }
-
-        });
-
-        const mobileKeys = {
-            up: false,
-            down: false,
-            left: false,
-            right: false
-        };
-
-
-        window.addEventListener('keyup', (e) => {
-            keys[e.key.toLowerCase()] = false;
-        });
-
-        // Mobile tap controls (tap = short movement burst)
-        document.querySelectorAll('.arrow-btn').forEach(btn => {
-            const dir = btn.dataset.dir;
-
-            btn.addEventListener('touchstart', e => {
-                e.preventDefault();
-
-                mobileKeys[dir] = true;
-
-                // Stop movement shortly after tap
-                setTimeout(() => {
-                    mobileKeys[dir] = false;
-                }, 120); // feels responsive, not twitchy
-            });
-        });
-
-
-
-        const dialogues = {
-            npc1: {
-                text: "Traveler! My neighbor keeps letting his chickens into my garden. They're ruining my crops! What should I do?",
-                choices: [
-                    { text: "Talk to him calmly and find a compromise", value: "good", isGood: true },
-                    { text: "Build a fence and ignore him completely", value: "bad", isGood: false }
-                ]
-            },
-            npc2: {
-                text: "Hello there! The village elder won't listen to my ideas for improving the market. I'm so frustrated! What would you do?",
-                choices: [
-                    { text: "Respectfully request a meeting to share your ideas", value: "good", isGood: true },
-                    { text: "Complain loudly to everyone about how unfair it is", value: "bad", isGood: false }
-                ]
-            }
-        };
-
-        const responses = {
-            npc1: {
-                good: "Thank you! I spoke with him and we worked it out. He built a coop and I shared some crops with him. We're friends now!",
-                bad: "I built the fence... but now we don't speak anymore. The village feels more divided."
-            },
-            npc2: {
-                good: "The elder agreed to meet with me! He loved my ideas and we're implementing them together. Thank you for the wise advice!",
-                bad: "Now everyone thinks I'm a troublemaker. The elder won't even look at me anymore. I wish I'd handled it differently."
-            }
-        };
-
-        function showDialogue(npc) {
-            const dialogueBox = document.getElementById('dialogueBox');
-            const npcName = document.getElementById('npcName');
-            const dialogueText = document.getElementById('dialogueText');
-            const choicesDiv = document.getElementById('choices');
-            
-            const npcId = npc === npc1 ? 'npc1' : 'npc2';
-            const completed = npcId === 'npc1' ? gameState.npc1Completed : gameState.npc2Completed;
-            
-            if (completed) return;
-            
-            const dialogue = dialogues[npcId];
-            
-            npcName.textContent = npc.userData.name;
-            dialogueText.textContent = dialogue.text;
-            choicesDiv.innerHTML = '';
-            
-            dialogue.choices.forEach(choice => {
-                const btn = document.createElement('button');
-                btn.className = 'choice-btn';
-                btn.textContent = choice.text;
-                btn.onclick = () => handleChoice(npcId, choice.value, choice.isGood);
-                choicesDiv.appendChild(btn);
-            });
-            
-            dialogueBox.classList.add('visible');
-        }
-
-        function handleChoice(npcId, choiceValue, isGood) {
-            if (npcId === 'npc1') {
-                gameState.npc1Choice = choiceValue;
-                gameState.npc1Completed = true;
-            } else {
-                gameState.npc2Choice = choiceValue;
-                gameState.npc2Completed = true;
-            }
-            
-            if (isGood) {
-                gameState.goodChoices++;
-            } else {
-                gameState.badChoices++;
-            }
-            
-            closeDialogue();
-            
-            setTimeout(() => {
-                const response = responses[npcId][choiceValue];
-                alert(response);
-                
-                if (gameState.npc1Completed && gameState.npc2Completed) {
-                    setTimeout(() => showEnding(), 500);
-                }
-            }, 300);
-        }
-
-        function closeDialogue() {
-            document.getElementById('dialogueBox').classList.remove('visible');
-        }
-
-        function showEnding() {
-            const endingScreen = document.getElementById('endingScreen');
-            const endingTitle = document.getElementById('endingTitle');
-            const endingText = document.getElementById('endingText');
-            const nextLevelBtn = document.getElementById('nextLevelBtn');
-            const restartBtn = document.getElementById('restartBtn');
-            
-            let title, text;
-            
-            if (gameState.goodChoices === 2) {
-                title = "Good Ending";
-                text = "You helped bring peace and harmony to the village. Everyone is happy!";
-            } else if (gameState.badChoices === 2) {
-                title = "Bad Ending";
-                text = "The village is more divided than before. People are unhappy with the outcomes.";
-            } else {
-                title = "Mixed Ending";
-                text = "Some villagers are happy, but others are not. The village is uncertain about the future.";
-            }
-            
-            endingTitle.textContent = title;
-            endingText.textContent = text;
-            
-            // Play success sound
-            playSound('level_complete');
-            
-            // Hide next level button if on last level, change restart button text
-            if (currentLevel >= 3) {
-                nextLevelBtn.style.display = 'none';
-                restartBtn.textContent = 'Restart Game';
-            } else {
-                nextLevelBtn.style.display = 'inline-block';
-                restartBtn.textContent = 'Restart Level';
-            }
-            
-            endingScreen.classList.add('visible');
-        }
-
-        document.getElementById('restartBtn').onclick = () => {
-            const restartBtn = document.getElementById('restartBtn');
-            // If on level 3, this means restart the whole game
-            if (currentLevel === 3) {
-                localStorage.removeItem('villageGameSave');
-                location.reload();
-            } else {
-                resetLevel();
-            }
-        };
-        
-        document.getElementById('nextLevelBtn').onclick = () => {
-            currentLevel++;
-            if (currentLevel > 3) {
-                // Show game complete screen
-                document.getElementById('endingScreen').classList.remove('visible');
-                document.getElementById('gameCompleteScreen').classList.add('visible');
-            } else {
-                resetLevel();
-            }
-        };
-        
-        document.getElementById('finalRestartBtn').onclick = () => {
-            localStorage.removeItem('villageGameSave');
-            location.reload();
-        };
-        
-        function resetLevel() {
-            // Reset game state
-            gameState.npc1Completed = false;
-            gameState.npc2Completed = false;
-            gameState.npc1Choice = null;
-            gameState.npc2Choice = null;
-            gameState.goodChoices = 0;
-            gameState.badChoices = 0;
-            gameState.nearNPC = null;
-            
-            // Reset player position
-            player.position.x = 0;
-            player.position.z = 5;
-            
-            // Update NPCs for current level
-            updateNPCsForLevel();
-            
-            // Hide ending screen
-            document.getElementById('endingScreen').classList.remove('visible');
-            
-            // Restart timer
-            stopTimer();
-            startTimer();
-        }
-
-        function checkNPCProximity() {
-            const distToNPC1 = Math.sqrt(
-                Math.pow(player.position.x - npc1.position.x, 2) +
-                Math.pow(player.position.z - npc1.position.z, 2)
-            );
-            const distToNPC2 = Math.sqrt(
-                Math.pow(player.position.x - npc2.position.x, 2) +
-                Math.pow(player.position.z - npc2.position.z, 2)
-            );
-            
-            const interactDistance = 2;
-            const prompt = document.getElementById('interactPrompt');
-            
-            if (distToNPC1 < interactDistance && !gameState.npc1Completed) {
-                gameState.nearNPC = npc1;
-                prompt.classList.add('visible');
-            } else if (distToNPC2 < interactDistance && !gameState.npc2Completed) {
-                gameState.nearNPC = npc2;
-                prompt.classList.add('visible');
-            } else {
-                gameState.nearNPC = null;
-                prompt.classList.remove('visible');
-            }
-        }
-
-        function checkCollision(newX, newZ) {
-            for (let collider of colliders) {
-                const dist = Math.sqrt(
-                    Math.pow(newX - collider.x, 2) +
-                    Math.pow(newZ - collider.z, 2)
-                );
-                if (dist < collider.radius + 0.5) {
-                    return true;
-                }
-            }
-            
-            if (Math.abs(newX) > 23 || Math.abs(newZ) > 23) {
-                return true;
-            }
-            
-            return false;
-        }
-
-        const moveSpeed = 0.08;
-        let bobOffset = 0;
-        let lastStepSound = 0;
-
-        function animate() {
-            requestAnimationFrame(animate);
-            
-            if (!gameStarted || gamePaused) {
-                renderer.render(scene, camera);
-                return;
-            }
-            
-            let keys = {};
-            let moving = false;
-
-        let mobileKeys = {
-            up: false,
-            down: false,
-            left: false,
-            right: false
-        };
-            
-            if (keys['w'] || mobileKeys.up) {
-                if (!checkCollision(player.position.x, player.position.z - moveSpeed)) {
-                    player.position.z -= moveSpeed;
-                    moving = true;
-                }
-            }
-            if (keys['s'] || mobileKeys.down) {
-                if (!checkCollision(player.position.x, player.position.z + moveSpeed)) {
-                    player.position.z += moveSpeed;
-                    moving = true;
-                }
-            }
-            if (keys['a'] || mobileKeys.left) {
-                if (!checkCollision(player.position.x - moveSpeed, player.position.z)) {
-                    player.position.x -= moveSpeed;
-                    moving = true;
-                }
-            }
-            if (keys['d'] || mobileKeys.right) {
-                if (!checkCollision(player.position.x + moveSpeed, player.position.z)) {
-                    player.position.x += moveSpeed;
-                    moving = true;
-                }
-            }
-            
-            if (moving) {
-                bobOffset += 0.2;
-                player.position.y = 0.75 + Math.sin(bobOffset) * 0.05;
-                
-                if (Date.now() - lastStepSound > 300) {
-                    playSound('walk');
-                    lastStepSound = Date.now();
-                }
-            } else {
-                player.position.y = 0.75;
-            }
-            
-            camera.position.x = player.position.x;
-            camera.position.z = player.position.z + 15;
-            camera.lookAt(player.position.x, 0, player.position.z);
-            
-            checkNPCProximity();
-            
-            renderer.render(scene, camera);
-        }
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        // Click / tap NPCs to talk (mobile + desktop)
-        renderer.domElement.addEventListener('click', (event) => {
-            if (!gameStarted || gamePaused) return;
-
-            const rect = renderer.domElement.getBoundingClientRect();
-            pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-            pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-            raycaster.setFromCamera(pointer, camera);
-
-            const intersects = raycaster.intersectObjects([npc1, npc2], true);
-
-            if (intersects.length > 0) {
-                const npc = intersects[0].object.parent;
-                playSound('interact');
-                showDialogue(npc);
-            }
-        });
-
-
-        animate();
-    </script>
-</body>
-</html>
+                npc2.position.set(6,... (15 KB left)
+The Version that works (Jordan edition).html
+65 KB
